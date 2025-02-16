@@ -24,32 +24,29 @@ def index():
         if not instruction:
             return "入力が必要です", 400
 
+        # 同期キューを使用
+        q = queue.Queue()
+
+        def stream_callback(message):
+            q.put(message)
+
+        # 非同期処理を別スレッドで実行
+        def run_async():
+            asyncio.run(run_sampling_loop(instruction, stream_callback=stream_callback))
+            q.put(None)
+
+        thread = threading.Thread(target=run_async)
+        thread.start()
+
         def generate():
-            q = queue.Queue()
-
-            def stream_callback(message):
-                # action の内容だけをキューに積む
-                q.put(message)
-
-            def run_loop():
-                asyncio.run(
-                    run_sampling_loop(instruction, stream_callback=stream_callback)
-                )
-                q.put(None)
-
-            t = threading.Thread(target=run_loop)
-            t.start()
-
             while True:
                 msg = q.get()
                 if msg is None:
                     break
-                else:
-                    yield f"{str(msg).replace('\n', '<br>')}\n"
+                yield f"{str(msg).replace('\n', '<br>')}\n"
 
         return Response(stream_with_context(generate()), mimetype="text/html")
     else:
-        # テンプレートファイルを利用
         return render_template("index.html")
 
 
@@ -95,19 +92,19 @@ async def run_sampling_loop(instruction: str, stream_callback=None):
             content_array = data.get("content", [])
             for block in content_array:
                 if isinstance(block, dict):
-                  block_type = block.get("type")
-                  if block_type == "text":
-                    if block.get("text"):
-                      message = block["text"]
-                      output_collector.append(message)
-                      if stream_callback:
-                        stream_callback(message)
-                  elif block_type == "tool_use":
-                    if block.get("input"):
-                      message = block["input"]
-                      output_collector.append(message)
-                      if stream_callback:
-                        stream_callback(message)
+                    block_type = block.get("type")
+                    if block_type == "text":
+                        if block.get("text"):
+                            message = block["text"]
+                            output_collector.append(message)
+                            if stream_callback:
+                                stream_callback(message)
+                    elif block_type == "tool_use":
+                        if block.get("input"):
+                            message = block["input"]
+                            output_collector.append(message)
+                            if stream_callback:
+                                stream_callback(message)
         except Exception as e:
             message = "Error parsing API response: " + str(e)
             output_collector.append(message)
