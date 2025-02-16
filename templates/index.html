@@ -8,27 +8,39 @@
 </head>
 
 <body>
-  <div id="log"></div>
+  <div id="chatContainer">
+    <div id="log"></div>
+  </div>
   <div id="inputForm">
     <input type="text" id="instruction" placeholder="例: Save an image of a cat to the desktop.">
-    <button id="sendButton">送信</button>
+    <button id="sendButton">
+      <img src="{{ url_for('static', filename='imgs/send.svg') }}" alt="送信">
+    </button>
   </div>
   <script>
     const logDiv = document.getElementById('log');
     const instructionInput = document.getElementById('instruction');
     const sendButton = document.getElementById('sendButton');
 
-    function appendLog(html) {
-      const p = document.createElement('p');
-      p.innerHTML = html;
-      logDiv.appendChild(p);
+    // sender: "user" or "bot"
+    function appendMessage(message, sender) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message', sender);
+
+      const textDiv = document.createElement('div');
+      textDiv.classList.add('text');
+      textDiv.innerHTML = message;
+
+      messageDiv.appendChild(textDiv);
+      logDiv.appendChild(messageDiv);
       window.scrollTo(0, document.body.scrollHeight);
     }
 
     function sendInstruction() {
       const instruction = instructionInput.value.trim();
       if (!instruction) return;
-      appendLog("<strong>You:</strong> " + instruction);
+      // ユーザメッセージを表示
+      appendMessage("<strong>You:</strong> " + instruction, "user");
       instructionInput.value = "";
       fetch("/", {
         method: "POST",
@@ -41,14 +53,15 @@
           reader.read().then(({ done, value }) => {
             if (done) return;
             const chunk = decoder.decode(value);
-            appendLog(chunk);
+            // 相手メッセージを表示
+            appendMessage(chunk, "bot");
             read();
           });
         }
         read();
       }).catch(err => {
         console.error(err);
-        appendLog("エラーが発生しました。");
+        appendMessage("エラーが発生しました。", "bot");
       });
     }
 

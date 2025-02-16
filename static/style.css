@@ -2,30 +2,87 @@ body {
   margin: 0;
   padding: 0;
   font-family: sans-serif;
+  background: #f5f5f5;
+}
+
+#chatContainer {
+  padding: 10px;
+  margin-bottom: 80px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 #log {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  background: #fff;
   padding: 10px;
-  margin-bottom: 80px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.message.user {
+  flex-direction: row-reverse;
+  background: #e0ffe0;
+}
+
+.message.bot {
+  background: #e0f0ff;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
+
+.message.user .avatar {
+  margin-left: 10px;
+  margin-right: 0;
+}
+
+.text {
+  max-width: 80%;
+  word-wrap: break-word;
 }
 
 #inputForm {
   position: fixed;
   bottom: 0;
   width: 100%;
-  background: #eee;
+  background: #fff;
   padding: 10px;
   box-sizing: border-box;
   display: flex;
+  border-top: 1px solid #ccc;
 }
 
 #instruction {
   flex: 1;
   font-size: 16px;
   padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 #sendButton {
   font-size: 16px;
   padding: 8px 16px;
+  margin-left: 10px;
+  border: none;
+  background: #fff;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#sendButton:hover {
+  background: #eee;
 }
