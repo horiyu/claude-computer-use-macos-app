@@ -84,6 +84,8 @@ async def run_sampling_loop(instruction: str, stream_callback=None):
             filename = f"screenshots/screenshot_{timestamp}_{tool_use_id}.png"
             with open(filename, "wb") as f:
                 f.write(base64.b64decode(result.base64_image))
+            if stream_callback:
+                stream_callback(f"[screenshot saved: {filename}]")
 
     def api_response_callback(response: APIResponse[BetaMessage]):
         try:
