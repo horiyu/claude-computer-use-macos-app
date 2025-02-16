@@ -86,10 +86,22 @@ async def run_sampling_loop(instruction: str, stream_callback=None):
     def api_response_callback(response: APIResponse[BetaMessage]):
         try:
             data = json.loads(response.text)
-            message = data.get("content", "")
-            output_collector.append(message)
-            if stream_callback:
-                stream_callback(message)
+            content_array = data.get("content", [])
+            for block in content_array:
+                if isinstance(block, dict):
+                  block_type = block.get("type")
+                  if block_type == "text":
+                    if block.get("text"):
+                      message = block["text"]
+                      output_collector.append(message)
+                      if stream_callback:
+                        stream_callback(message)
+                  elif block_type == "tool_use":
+                    if block.get("input"):
+                      message = block["input"]
+                      output_collector.append(message)
+                      if stream_callback:
+                        stream_callback(message)
         except Exception as e:
             message = "Error parsing API response: " + str(e)
             output_collector.append(message)
