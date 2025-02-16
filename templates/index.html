@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Claude Computer Use Chat</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <div id="log"></div>
+  <div id="inputForm">
+    <input type="text" id="instruction" placeholder="例: Save an image of a cat to the desktop.">
+    <button id="sendButton">送信</button>
+  </div>
+  <script>
+    const logDiv = document.getElementById('log');
+    const instructionInput = document.getElementById('instruction');
+    const sendButton = document.getElementById('sendButton');
+
+    function appendLog(html) {
+      const p = document.createElement('p');
+      p.innerHTML = html;
+      logDiv.appendChild(p);
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function sendInstruction() {
+      const instruction = instructionInput.value.trim();
+      if (!instruction) return;
+      appendLog("<strong>You:</strong> " + instruction);
+      instructionInput.value = "";
+      fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "instruction=" + encodeURIComponent(instruction)
+      }).then(response => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        function read() {
+          reader.read().then(({ done, value }) => {
+            if (done) return;
+            const chunk = decoder.decode(value);
+            appendLog(chunk);
+            read();
+          });
+        }
+        read();
+      }).catch(err => {
+        console.error(err);
+        appendLog("エラーが発生しました。");
+      });
+    }
+
+    sendButton.addEventListener('click', sendInstruction);
+    instructionInput.addEventListener('keypress', function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendInstruction();
+      }
+    });
+  </script>
+</body>
+
+</html>
