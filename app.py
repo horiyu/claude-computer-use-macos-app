@@ -5,6 +5,7 @@ import json
 import base64
 import queue
 import threading
+from datetime import datetime
 
 from computer_use_demo.loop import sampling_loop, APIProvider
 from computer_use_demo.tools import ToolResult
@@ -79,7 +80,8 @@ async def run_sampling_loop(instruction: str, stream_callback=None):
     def tool_output_callback(result: ToolResult, tool_use_id: str):
         if result.base64_image:
             os.makedirs("screenshots", exist_ok=True)
-            filename = f"screenshots/screenshot_{tool_use_id}.png"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"screenshots/screenshot_{timestamp}_{tool_use_id}.png"
             with open(filename, "wb") as f:
                 f.write(base64.b64decode(result.base64_image))
 
