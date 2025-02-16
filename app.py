@@ -29,7 +29,7 @@ def index():
                 q.put(message)
 
             def run_loop():
-                # 非同期処理実行後は補助ログは出さず，action のみを送信
+
                 asyncio.run(
                     run_sampling_loop(instruction, stream_callback=stream_callback)
                 )
@@ -38,11 +38,25 @@ def index():
             t = threading.Thread(target=run_loop)
             t.start()
 
-            # キューから受け取った action のログのみを送信
             while True:
                 msg = q.get()
                 if msg is None:
                     break
+                else:
+                    if isinstance(msg, list):
+                        formatted = ""
+                        for item in msg:
+                            if item.get("type") == "text":
+                              if formatted:
+                                formatted += "<br>"
+                              formatted += item.get("text", "").replace("\n", "<br>")
+                            elif item.get("type") == "tool_use":
+                              if formatted:
+                                formatted += "<br>"
+                              formatted += str(item.get("input", {}))
+                        msg = formatted
+                    else:
+                        msg = str(msg).replace("\n", "<br>")
                 yield f"<p>{msg}</p>\n"
 
         return Response(stream_with_context(generate()), mimetype="text/html")
