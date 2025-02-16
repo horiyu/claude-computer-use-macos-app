@@ -10,6 +10,7 @@
 <body>
   <div id="chatContainer">
     <div id="log"></div>
+    <div id="loading" class="loading"></div>
   </div>
   <div id="inputForm">
     <input type="text" id="instruction" placeholder="例: Save an image of a cat to the desktop.">
@@ -21,6 +22,7 @@
     const logDiv = document.getElementById('log');
     const instructionInput = document.getElementById('instruction');
     const sendButton = document.getElementById('sendButton');
+    const loading = document.getElementById('loading');
 
     // メッセージを表示する関数
     function appendMessage(message, sender) {
@@ -51,6 +53,12 @@
     async function sendInstruction() {
       const instruction = instructionInput.value.trim();
       if (!instruction) return;
+
+      // ローディング表示を開始
+      loading.classList.add('visible');
+      sendButton.disabled = true;
+      instructionInput.disabled = true;
+
       // ユーザメッセージを表示し、フォームをクリア
       appendMessage("You: " + instruction, "user");
       instructionInput.value = "";
@@ -71,6 +79,11 @@
       } catch (err) {
         console.error(err);
         appendMessage("エラーが発生しました。", "bot");
+      } finally {
+        // ローディング表示を終了
+        loading.classList.remove('visible');
+        sendButton.disabled = false;
+        instructionInput.disabled = false;
       }
     }
 
