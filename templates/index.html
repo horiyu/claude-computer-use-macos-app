@@ -22,15 +22,13 @@
     const instructionInput = document.getElementById('instruction');
     const sendButton = document.getElementById('sendButton');
 
-    // sender: "user" or "bot"
+    // メッセージを表示する関数
     function appendMessage(message, sender) {
       const messageDiv = document.createElement('div');
       messageDiv.classList.add('message', sender);
 
       const contentDiv = document.createElement('div');
       contentDiv.classList.add('text');
-
-      console.log(message);
 
       if (String(message).startsWith("screenshots")) {
         const img = document.createElement('img');
@@ -40,7 +38,8 @@
         contentDiv.appendChild(img);
       } else {
         const p = document.createElement('p');
-        p.innerHTML = message;
+        // innerText を利用して HTML インジェクションを防止
+        p.innerText = message;
         contentDiv.appendChild(p);
       }
 
@@ -49,37 +48,34 @@
       window.scrollTo(0, document.body.scrollHeight);
     }
 
-    function sendInstruction() {
+    async function sendInstruction() {
       const instruction = instructionInput.value.trim();
       if (!instruction) return;
-      // ユーザメッセージを表示
-      appendMessage("<strong>You:</strong> " + instruction, "user");
+      // ユーザメッセージを表示し、フォームをクリア
+      appendMessage("You: " + instruction, "user");
       instructionInput.value = "";
-      fetch("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "instruction=" + encodeURIComponent(instruction)
-      }).then(response => {
+      try {
+        const response = await fetch("/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "instruction=" + encodeURIComponent(instruction)
+        });
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        function read() {
-          reader.read().then(({ done, value }) => {
-            if (done) return;
-            const chunk = decoder.decode(value);
-            // 相手メッセージを表示
-            appendMessage(chunk, "bot");
-            read();
-          });
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          appendMessage(chunk, "bot");
         }
-        read();
-      }).catch(err => {
+      } catch (err) {
         console.error(err);
         appendMessage("エラーが発生しました。", "bot");
-      });
+      }
     }
 
     sendButton.addEventListener('click', sendInstruction);
-    instructionInput.addEventListener('keypress', function (e) {
+    instructionInput.addEventListener('keypress', (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         sendInstruction();
