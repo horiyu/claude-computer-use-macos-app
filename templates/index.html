@@ -40,7 +40,6 @@
         contentDiv.appendChild(img);
       } else {
         const p = document.createElement('p');
-        // innerText を利用して HTML インジェクションを防止
         p.innerText = message;
         contentDiv.appendChild(p);
       }

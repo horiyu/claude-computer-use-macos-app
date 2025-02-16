@@ -1,4 +1,11 @@
-from flask import Flask, request, render_template, Response, stream_with_context, Blueprint
+from flask import (
+    Flask,
+    request,
+    render_template,
+    Response,
+    stream_with_context,
+    Blueprint,
+)
 import asyncio
 import os
 import json
@@ -14,8 +21,14 @@ from anthropic import APIResponse
 
 app = Flask(__name__)
 
-add_app = Blueprint("screenshots", __name__, static_url_path="/screenshots", static_folder="./screenshots")
+add_app = Blueprint(
+    "screenshots",
+    __name__,
+    static_url_path="/screenshots",
+    static_folder="./screenshots",
+)
 app.register_blueprint(add_app)
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -43,7 +56,7 @@ def index():
                 msg = q.get()
                 if msg is None:
                     break
-                yield f"{str(msg).replace('\n', '<br>')}\n"
+                yield str(msg) + "\n"
 
         return Response(stream_with_context(generate()), mimetype="text/html")
     else:
