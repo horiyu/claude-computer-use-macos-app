@@ -27,11 +27,24 @@
       const messageDiv = document.createElement('div');
       messageDiv.classList.add('message', sender);
 
-      const textDiv = document.createElement('div');
-      textDiv.classList.add('text');
-      textDiv.innerHTML = message;
+      const contentDiv = document.createElement('div');
+      contentDiv.classList.add('text');
 
-      messageDiv.appendChild(textDiv);
+      console.log(message);
+
+      if (String(message).startsWith("screenshots")) {
+        const img = document.createElement('img');
+        img.src = message;
+        img.style.width = "100%";
+        img.style.height = "auto";
+        contentDiv.appendChild(img);
+      } else {
+        const p = document.createElement('p');
+        p.innerHTML = message;
+        contentDiv.appendChild(p);
+      }
+
+      messageDiv.appendChild(contentDiv);
       logDiv.appendChild(messageDiv);
       window.scrollTo(0, document.body.scrollHeight);
     }
