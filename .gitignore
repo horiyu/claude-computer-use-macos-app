@@ -28,3 +28,6 @@ dist/
 
 # macOS Trash folder
 .Trash/
+
+# Additional patterns to ignore
+screenshots/
