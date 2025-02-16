@@ -47,17 +47,85 @@ def index():
 
         return Response(stream_with_context(generate()), mimetype="text/html")
     else:
+        # チャット画面風HTML（入力欄固定, チャットログ表示エリア）
         return render_template_string(
             """
+        <!DOCTYPE html>
         <html>
-            <head><title>Claude Computer Use</title></head>
-            <body>
-                <h1>命令を入力してください</h1>
-                <form method="post">
-                    <input type="text" name="instruction" placeholder="例: Save an image of a cat to the desktop." size="60"><br><br>
-                    <input type="submit" value="送信">
-                </form>
-            </body>
+          <head>
+            <meta charset="UTF-8">
+            <title>Claude Computer Use Chat</title>
+            <style>
+              body { margin: 0; padding: 0; font-family: sans-serif; }
+              #log { padding: 10px; margin-bottom: 80px; }
+              #inputForm {
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                background: #eee;
+                padding: 10px;
+                box-sizing: border-box;
+                display: flex;
+              }
+              #instruction { flex: 1; font-size: 16px; padding: 8px; }
+              #sendButton { font-size: 16px; padding: 8px 16px; }
+            </style>
+          </head>
+          <body>
+            <div id="log"></div>
+            <div id="inputForm">
+              <input type="text" id="instruction" placeholder="例: Save an image of a cat to the desktop.">
+              <button id="sendButton">送信</button>
+            </div>
+            <script>
+              const logDiv = document.getElementById('log');
+              const instructionInput = document.getElementById('instruction');
+              const sendButton = document.getElementById('sendButton');
+
+              function appendLog(html) {
+                const p = document.createElement('p');
+                p.innerHTML = html;
+                logDiv.appendChild(p);
+                window.scrollTo(0, document.body.scrollHeight);
+              }
+
+              function sendInstruction() {
+                const instruction = instructionInput.value.trim();
+                if (!instruction) return;
+                // ユーザ入力をログに表示
+                appendLog("<strong>You:</strong> " + instruction);
+                instructionInput.value = "";
+                fetch("/", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                  body: "instruction=" + encodeURIComponent(instruction)
+                }).then(response => {
+                  const reader = response.body.getReader();
+                  const decoder = new TextDecoder();
+                  function read() {
+                    reader.read().then(({ done, value }) => {
+                      if (done) return;
+                      const chunk = decoder.decode(value);
+                      appendLog(chunk);
+                      read();
+                    });
+                  }
+                  read();
+                }).catch(err => {
+                  console.error(err);
+                  appendLog("エラーが発生しました。");
+                });
+              }
+              
+              sendButton.addEventListener('click', sendInstruction);
+              instructionInput.addEventListener('keypress', function(e) {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  sendInstruction();
+                }
+              });
+            </script>
+          </body>
         </html>
         """
         )
@@ -84,13 +152,14 @@ async def run_sampling_loop(instruction: str, stream_callback=None):
 
     def output_callback(content_block):
         if isinstance(content_block, dict) and content_block.get("type") == "text":
+            # action の内容のみを送信（例: "左クリック", "〇〇と入力" など）
             action_text = content_block.get("text")
             output_collector.append(action_text)
             if stream_callback:
                 stream_callback(action_text)
 
     def tool_output_callback(result: ToolResult, tool_use_id: str):
-        # ツールからの出力は画面に表示させない（必要な場合は別途ログなどで出力）
+        # ツールからの出力は画面に表示させない
         if result.base64_image:
             os.makedirs("screenshots", exist_ok=True)
             filename = f"screenshots/screenshot_{tool_use_id}.png"
@@ -100,7 +169,6 @@ async def run_sampling_loop(instruction: str, stream_callback=None):
     def api_response_callback(response: APIResponse[BetaMessage]):
         try:
             data = json.loads(response.text)
-            # action の内容（input としての指示）をそのまま取り出す（例:"左クリック", "〇〇と入力"）
             message = data.get("content", "")
             output_collector.append(message)
             if stream_callback:
